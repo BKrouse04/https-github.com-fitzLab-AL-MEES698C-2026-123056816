@@ -8,7 +8,7 @@ library(ggplot2)
 
 ### High latitude is: Anchorage, AK
 ### Medium latitude: Chicago, IL
-### Low latitude: Miama, FL
+### Low latitude: Miami, FL
 
 
 ### Created a data frame using the data.frame function with two columns, named
@@ -31,7 +31,8 @@ locations <- data.frame(
 
 ### Used the geocode function from tidygeocoder to retrieve latitude and
 ### longitude coordinates for each of the chosen locations. Geocode by default
-### adds new columns titled lat and long. I chose the method arcgis
+### adds new columns titled lat and long. I chose the method arcgis as it is
+### more consistent than other methods for geocode, like osm
 locations_cord <- locations %>%
   geocode(
     address = Address,
@@ -69,6 +70,14 @@ for (i in 1:nrow(locations_cord)) {
   daymet_all <- bind_rows(daymet_all, daymet_data)
 }
 
+### Check your understanding 1: download_daymet only expects one
+### latitude/longitude pair at a time, and is not set up to handle whole columns
+### at once. The downloaded data is first stored in daymet_data, and then added
+### to daymet_all, which was created as an empty dataframe for storage. Using
+### bind_rows allows me to avoid overwriting location data, as new rows are just
+### added to the existing dataframe.
+
+
 ### Created a daily average temperature, and store it in a dataframe called
 ### daymet_temp, that only includes, location, year, day, min, max, and now mean
 ### temperature
@@ -88,6 +97,15 @@ summer_temp <- daymet_temp %>%
     summer_mean_temp = mean(tmean, na.rm = TRUE),
     .groups = "drop"
   )
+
+### Check your understanding 2: We need to filter to summer days first,
+### otherwise all days from that year will be included in the grouping and
+### averaging instead of just the summer days. One row of the summarized results
+### correspond with all the temperature values for summer days (170-260) of that
+### year. We need to remove the non-temperature variables to avoid them
+### influencing our averaging. However, even if they are not filtered out first,
+### dplyr will drop them if they are not included in the grouping or averaging
+### code, allowing us to avoid using them either way.
 
 ### Changed the location levels to factors so I could avoid them being in
 ### alphabetical order in the graph key
@@ -132,7 +150,17 @@ ggsave(
     dpi = 300
   )
 
-
+### Check your understanding 3: the default method of loess is more curved and
+### sensitive to differences than the method lm, which produces a straight
+### smooth. The method lm assumes the trend changes consistently/linearly over
+### time, while loess would be more appropriate when the rate of change varies
+### or is nonlinear. For this analysis, I would keep loess, as the rate of
+### change is not linear, and this allows us to visualize how temperature has
+### changed over time, without assuming a constant rate. At my high latitude
+### location (Anchorage), the rate of temperature increase is higher between
+### 1980 and 2000 than it is for years after 2000, which may be hard to
+### visualize if using the lm method. However, loess can be sensitive to
+### year-year variations, which should be kept in mind.
 
 ### Question 6. I would tell my grandfather and uncle that summers are getting
 ### hotter, but the rate of increase differs by latitude and location. For
